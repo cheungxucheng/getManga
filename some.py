@@ -35,12 +35,36 @@ for manga in data["statuses"]:
     # offset += limit
 
 # print(len(followed_manga))
-print(followed_manga[1])
+# for manga in followed_manga:
+#     print(manga)
 wb = openpyxl.load_workbook("Manga and Good Omens.xlsx")
 ws = wb.active
 
+#raw and engtl
 for manga in followed_manga: 
     title = manga["data"]["attributes"]["title"]["en"]
+    tags = ", ".join([tag["attributes"]["name"]["en"] for tag in manga["data"]["attributes"]["tags"]])
+    pub = manga["data" ]["type"]
+
+    if "Girls' Love" in tags:
+        queer = "GL"
+    elif "Boys' Love" in tags:
+        queer = "BL"
+    else: 
+        queer = "X"
+
+    desc = manga["data"]["attributes"]["description"]["en"]
+
+    content_rating = manga["data"]["attributes"]["contentRating"]
+
+    source = ""
+    
+    if manga["data"]["attributes"]["links"]["raw"]:
+        source += manga["data"]["attributes"]["links"]["raw"] + " "
+    if manga["data"]["attributes"]["links"]["engtl"]:
+        source += manga["data"]["attributes"]["links"]["engtl"] + " "
+
+
     artists = []
     authors = []
     for thing in manga["data"]["relationships"]:
@@ -60,7 +84,26 @@ for manga in followed_manga:
         url = f"https://api.mangadex.org/author/{artist}"
         res = requests.get(url, headers=headers)
         data = res.json()
-        artist_list += data["data"]["attributes"]["name"] + ", "
+        artist_list = ", ".join([data["data"]["attributes"]["name"]])
+        if data["data"]["attributes"]["twitter"]:
+            artists_links += " " + data["data"]["attributes"]["twitter"]
+        elif data["data"]["attributes"]["weibo"]:
+            artists_links += " " + data["data"]["attributes"]["weibo"]
+    for author in authors:
+        url = f"https://api.mangadex.org/author/{author}"
+        res = requests.get(url, headers=headers)
+        data = res.json()
+        author_list = ", ".join([data["data"]["attributes"]["name"]])
+        if data["data"]["attributes"]["twitter"]:
+            authors_links += " " + data["data"]["attributes"]["twitter"]
+        elif data["data"]["attributes"]["weibo"]:
+            authors_links += " " + data["data"]["attributes"]["weibo"]
 
 
-    ws.append()
+
+    if artist_links: 
+        ws.append([title, artist_list, author_list, artist_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+    elif author_links:
+        ws.append([title, artist_list, author_list, author_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+    else:
+        ws.append([title, artist_list, author_list, "n/a", queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
