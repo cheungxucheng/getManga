@@ -1,6 +1,9 @@
 import requests
 import openpyxl
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 login_data = {
     "username": "gaysicle",
@@ -19,9 +22,10 @@ headers = {
 followed_manga = []
 limit = 100
 offset = 0
+following_status = "dropped"
 
 # while True:
-url = f"https://api.mangadex.org/manga/status?status=completed"
+url = f"https://api.mangadex.org/manga/status?status={following_status}"
 res = requests.get(url, headers=headers)
 data = res.json()
 for manga in data["statuses"]:
@@ -112,12 +116,12 @@ for manga in followed_manga:
 
     if artist_links: 
         print(n)
-        ws.append([title, artist_list, author_list, artist_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+        ws.append([title, artist_list, author_list, artist_links, queer, content_rating, pub, tags, desc, source, following_status, "", ""])
     elif author_links:
         print(n)
-        ws.append([title, artist_list, author_list, author_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+        ws.append([title, artist_list, author_list, author_links, queer, content_rating, pub, tags, desc, source, following_status, "", ""])
     else:
         print(n)
-        ws.append([title, artist_list, author_list, "n/a", queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+        ws.append([title, artist_list, author_list, "n/a", queer, content_rating, pub, tags, desc, source, following_status, "", ""])
 
 wb.save(sheet)
