@@ -1,9 +1,10 @@
 import requests
 import openpyxl
+import os
 
 login_data = {
     "username": "gaysicle",
-    "password": "vurwAk-qehhub-2hawky"
+    "password": os.getenv("SECRETS")
 }
 
 res = requests.post("https://api.mangadex.org/auth/login", json=login_data)
@@ -37,12 +38,16 @@ for manga in data["statuses"]:
 # print(len(followed_manga))
 # for manga in followed_manga:
 #     print(manga)
-wb = openpyxl.load_workbook("Manga and Good Omens.xlsx")
+sheet = "Manga and Good Omens.xlsx"
+wb = openpyxl.load_workbook(sheet)
 ws = wb.active
-
+n = 0
 #raw and engtl
 for manga in followed_manga: 
-    title = manga["data"]["attributes"]["title"]["en"]
+    title = manga["data"]["attributes"]["title"].get("en")
+    if not title:
+        title = next(iter(manga["data"]["attributes"]["title"].values()), "")
+
     tags = ", ".join([tag["attributes"]["name"]["en"] for tag in manga["data"]["attributes"]["tags"]])
     pub = manga["data" ]["type"]
 
@@ -53,25 +58,28 @@ for manga in followed_manga:
     else: 
         queer = "X"
 
-    desc = manga["data"]["attributes"]["description"]["en"]
+    desc = manga["data"]["attributes"]["description"].get("en")
+    if not desc:
+        # fallback to any available language or leave it empty
+        desc = next(iter(manga["data"]["attributes"]["description"].values()), "")
 
     content_rating = manga["data"]["attributes"]["contentRating"]
 
     source = ""
     
-    if manga["data"]["attributes"]["links"]["raw"]:
+    if "raw" in manga["data"]["attributes"]["links"]:
         source += manga["data"]["attributes"]["links"]["raw"] + " "
-    if manga["data"]["attributes"]["links"]["engtl"]:
+    if "engtl" in manga["data"]["attributes"]["links"]:
         source += manga["data"]["attributes"]["links"]["engtl"] + " "
 
 
     artists = []
     authors = []
     for thing in manga["data"]["relationships"]:
-        if thing[type] == "artist":
-            artists.append(thing)
-        elif thing[type] == "author":
-            authors.append(thing)
+        if thing["type"] == "artist":
+            artists.append(thing["id"])
+        elif thing["type"] == "author":
+            authors.append(thing["id"])
         else:
             break
 
@@ -86,24 +94,30 @@ for manga in followed_manga:
         data = res.json()
         artist_list = ", ".join([data["data"]["attributes"]["name"]])
         if data["data"]["attributes"]["twitter"]:
-            artists_links += " " + data["data"]["attributes"]["twitter"]
+            artist_links += " " + data["data"]["attributes"]["twitter"]
         elif data["data"]["attributes"]["weibo"]:
-            artists_links += " " + data["data"]["attributes"]["weibo"]
+            artist_links += " " + data["data"]["attributes"]["weibo"]
     for author in authors:
         url = f"https://api.mangadex.org/author/{author}"
         res = requests.get(url, headers=headers)
         data = res.json()
         author_list = ", ".join([data["data"]["attributes"]["name"]])
         if data["data"]["attributes"]["twitter"]:
-            authors_links += " " + data["data"]["attributes"]["twitter"]
+            author_links += " " + data["data"]["attributes"]["twitter"]
         elif data["data"]["attributes"]["weibo"]:
-            authors_links += " " + data["data"]["attributes"]["weibo"]
+            author_links += " " + data["data"]["attributes"]["weibo"]
 
 
+    n += 1
 
     if artist_links: 
+        print(n)
         ws.append([title, artist_list, author_list, artist_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
     elif author_links:
+        print(n)
         ws.append([title, artist_list, author_list, author_links, queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
     else:
+        print(n)
         ws.append([title, artist_list, author_list, "n/a", queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
+
+wb.save("Manga and Good Omens.xlsx")
