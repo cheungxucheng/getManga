@@ -120,4 +120,4 @@ for manga in followed_manga:
         print(n)
         ws.append([title, artist_list, author_list, "n/a", queer, content_rating, pub, tags, desc, source, "Completed", "", ""])
 
-wb.save("Manga and Good Omens.xlsx")
+wb.save(sheet)
